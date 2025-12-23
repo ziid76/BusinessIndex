@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}사용자 현황 및 권한 관리 - 삼천리 경영지표 관리{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-6 p-6">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#e5e7eb] dark:border-[#2a3c48] pb-6">
+        <div>
+            <h1 class="text-[#111618] dark:text-white text-3xl font-bold tracking-tight">사용자 현황</h1>
+            <p class="text-[#5f7d8c] text-sm mt-1">시스템 사용자를 조회하고 메뉴 접근 권한을 관리합니다.</p>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#1a2832] rounded-xl border border-[#e5e7eb] dark:border-[#2a3c48] shadow-sm overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-[#202f3a] border-b border-[#e5e7eb] dark:border-[#2a3c48]">
+                    <th class="px-6 py-4 text-xs font-bold text-[#5f7d8c] uppercase tracking-wider">사용자 (ID)</th>
+                    <th class="px-6 py-4 text-xs font-bold text-[#5f7d8c] uppercase tracking-wider">이메일</th>
+                    <th class="px-6 py-4 text-xs font-bold text-[#5f7d8c] uppercase tracking-wider">접근 가능 메뉴</th>
+                    <th class="px-6 py-4 text-xs font-bold text-[#5f7d8c] uppercase tracking-wider text-right">설정</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[#e5e7eb] dark:divide-[#2a3c48]">
+                {% for u in users %}
+                <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                                {{ u.username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-[#111618] dark:text-white">{{ u.username }}</p>
+                                <p class="text-xs text-[#5f7d8c]">ID: {{ u.id }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-[#5f7d8c]">
+                        {{ u.email|default:"- " }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-2">
+                            {% for menu in u.permitted_menus.all %}
+                            <span class="px-2 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-md">
+                                {{ menu.name }}
+                            </span>
+                            {% empty %}
+                            <span class="text-xs text-gray-400 italic">권한 없음</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="handlePermissionClick(this)"
+                                data-user-id="{{ u.id }}"
+                                data-username="{{ u.username }}"
+                                data-menus="[{% for m in u.permitted_menus.all %}'{{ m.id }}'{% if not forloop.last %},{% endif %}{% endfor %}]"
+                                class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a2832] border border-[#e5e7eb] dark:border-[#2a3c48] rounded-lg text-xs font-bold text-[#111618] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined text-sm">settings</span>
+                            권한 설정
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Permission Modal -->
+<div id="permissionModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1a2832] w-full max-w-md rounded-2xl shadow-2xl border border-[#e5e7eb] dark:border-[#2a3c48] overflow-hidden">
+            <div class="px-6 py-4 border-b border-[#e5e7eb] dark:border-[#2a3c48] flex items-center justify-between bg-gray-50 dark:bg-[#202f3a]">
+                <h3 class="font-bold text-[#111618] dark:text-white">메뉴 권한 설정</h3>
+                <button onclick="closePermissionModal()" class="text-[#5f7d8c] hover:text-red-500 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="bg-primary/5 p-4 rounded-xl border border-primary/10">
+                    <p class="text-xs text-primary font-bold uppercase tracking-wider mb-1">Target User</p>
+                    <p id="modal_username" class="text-lg font-bold text-[#111618] dark:text-white">-</p>
+                    <input type="hidden" id="modal_user_id">
+                </div>
+
+                <div>
+                    <p class="text-xs font-bold text-[#5f7d8c] uppercase tracking-wider mb-3">접근 허용 메뉴 선택</p>
+                    <div class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {% for menu in all_menus %}
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-[#e5e7eb] dark:border-[#2a3c48] hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all group">
+                            <div class="flex items-center gap-3">
+                                <div class="size-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-[#5f7d8c] group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-sm">
+                                        {% if menu.code == 'FO' %}analytics{% elif menu.code == 'BM' %}monitoring{% else %}dashboard{% endif %}
+                                    </span>
+                                </div>
+                                <span class="text-sm font-semibold text-[#111618] dark:text-white">{{ menu.name }}</span>
+                            </div>
+                            <input type="checkbox" name="menu_choice" value="{{ menu.id }}" 
+                                   class="size-5 rounded border-[#e5e7eb] dark:border-[#2a3c48] text-primary focus:ring-primary/20 cursor-pointer">
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 dark:bg-[#202f3a] border-t border-[#e5e7eb] dark:border-[#2a3c48] flex gap-3">
+                <button onclick="closePermissionModal()" class="flex-1 py-2 rounded-lg border border-[#e5e7eb] dark:border-[#2a3c48] text-sm font-bold text-[#5f7d8c] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    취소
+                </button>
+                <button onclick="savePermissions()" class="flex-1 py-2 rounded-lg bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+                    저장하기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handlePermissionClick(btn) {
+    const userId = btn.getAttribute('data-user-id');
+    const username = btn.getAttribute('data-username');
+    // data-menus is a string like "['1','2']", we need to parse it
+    const menusStr = btn.getAttribute('data-menus');
+    const permittedMenuIds = eval(menusStr); // In a real app, use JSON.parse after proper formatting
+    
+    openPermissionModal(userId, username, permittedMenuIds);
+}
+
+function openPermissionModal(userId, username, permittedMenuIds) {
+    document.getElementById('modal_user_id').value = userId;
+    document.getElementById('modal_username').innerText = username;
+    
+    // Reset and check checkboxes
+    const checkboxes = document.getElementsByName('menu_choice');
+    checkboxes.forEach(cb => {
+        cb.checked = permittedMenuIds.includes(cb.value);
+    });
+    
+    document.getElementById('permissionModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePermissionModal() {
+    document.getElementById('permissionModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function savePermissions() {
+    const userId = document.getElementById('modal_user_id').value;
+    const selectedMenus = Array.from(document.querySelectorAll('input[name="menu_choice"]:checked')).map(cb => cb.value);
+    
+    fetch("{% url 'update_user_permissions' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            menu_ids: selectedMenus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('권한이 성공적으로 업데이트되었습니다.');
+            location.reload();
+        } else {
+            alert('오류 발생: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('서버 통신 중 오류가 발생했습니다.');
+    });
+}
+</script>
+{% endblock %}

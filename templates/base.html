@@ -1,0 +1,221 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html class="light" lang="ko">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>{% block title %}Enterprise System{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0077C8", // Pantone 3005C
+                        "background-light": "#ffffff", // Pure white background
+                        "background-dark": "#131711",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1c2619",
+                        "surface-highlight": "#f1f5f9", // Light grey for interactions in light mode
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "1.5rem",
+                        "xl": "2rem",
+                        "2xl": "3rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            .icon-filled {
+                font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                @apply bg-slate-200 rounded-full;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                @apply bg-primary/50;
+            }
+            .accordion-chevron {
+                transition: transform 0.2s ease-in-out;
+            }
+            .accordion-open .accordion-chevron {
+                transform: rotate(90deg);
+            }
+            .accordion-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease-out;
+            }
+            .accordion-content.accordion-open {
+                max-height: 1000px; /* Increased max-height for nested items */
+            }
+        }
+    </style>
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css">
+    
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* DataTables Custom Style */
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            @apply rounded-lg border-[#e5e7eb] bg-[#f8fafc] text-sm py-2 px-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none;
+        }
+        table.dataTable {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            @apply border border-[#e5e7eb] rounded-xl overflow-hidden;
+        }
+        table.dataTable thead th {
+            @apply bg-gray-50 text-[#5f7d8c] font-bold text-xs uppercase tracking-wider py-4 px-6 border-b border-[#e5e7eb];
+        }
+        table.dataTable tbody td {
+            @apply py-4 px-6 border-b border-[#e5e7eb] text-sm text-[#111618];
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            @apply bg-primary text-white border-primary rounded-lg font-bold !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            @apply bg-primary/10 text-primary border-primary/10 rounded-lg !important;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#111618] dark:text-white h-screen overflow-hidden flex flex-col">
+    <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#e5e7eb] dark:border-[#2a3c48] bg-white dark:bg-[#1a2832] px-6 py-3 shrink-0 z-20">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3 text-[#111618] dark:text-white">
+                <div class="bg-center bg-no-repeat bg-cover rounded-full size-12 shadow-lg ring-2 ring-primary/20" 
+                         style='background-image: url("{% static "images/logo.png" %}");'>
+                         <!-- Placeholder for avatar if not available -->
+                    </div>
+                <h2 class="text-[#111618] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">삼천리 경영지표 관리</h2>
+            </div>
+            
+            <!-- Search Bar from basic.html -->
+            <div class="hidden md:flex flex-1 max-w-xl mx-4">
+                <label class="flex w-full items-center rounded-lg bg-gray-50 dark:bg-[#202f3a] px-3 h-10 border border-[#e5e7eb] dark:border-[#2a3c48] focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                    <span class="material-symbols-outlined text-[#5f7d8c] text-[20px]">search</span>
+                    <input class="w-full bg-transparent border-none text-sm px-3 text-[#111618] dark:text-white placeholder:text-[#94a3b8] focus:ring-0" 
+                           type="search" placeholder="Search..."/>
+                </label>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col items-end hidden sm:flex">
+                    <span class="text-sm font-semibold text-[#111618] dark:text-white">{{ user.username }}</span>
+                    <span class="text-xs text-[#5f7d8c]">{% if user.is_superuser %}Admin{% else %}Member{% endif %}</span>
+                </div>
+                <!-- Profile Image from basic.html logic -->
+                <div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-white dark:ring-[#1a2832] shadow-sm" 
+                     style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCmoai1KzRuCRyeAM0DSekmXiUbrjiuFl4t1T3DAJFlzYyDwQObAD4TR0DmFgY9VKwrb61uJgcHk4QVQmUJB9_MfCpLPo1KI-RgEgmDigHjSTGGUJC_3UEl1t5h-pmzCoTG0k16oIN33QrVDxYheKhXuvhRPvTX2FxlxRf0ZzE1nE7I5GkY_-na5fYo54-etvCudzhJJgshgOk5duk_ct4rEbj1GmIsFaMScb6fFzd1Ap-T9DARZz4SxbuVQ0WFYRqjioiLRcoC-34");'></div>
+                
+                <form action="{% url 'logout' %}" method="post" id="logout-form" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="flex items-center justify-center size-10 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-500" title="Logout">
+                        <span class="material-symbols-outlined">logout</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar with Accordion from basic.html -->
+        <aside class="w-64 bg-white dark:bg-[#1a2832] border-r border-[#e5e7eb] dark:border-[#2a3c48] flex flex-col justify-between shrink-0 hidden lg:flex">
+            <div class="flex flex-col p-4 gap-6 overflow-y-auto">
+                <nav class="flex flex-col gap-1">
+                    <p class="px-3 text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-2">지표관리</p>
+                    
+
+
+                    <!-- 권한 부여된 사업영역별 일일지표 입력 메뉴 -->
+                    {% for menu in user_menus %}
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-[#5f7d8c] hover:text-primary transition-colors group" 
+                       href="{% url 'daily_performance' menu.code %}">
+                        <span class="material-symbols-outlined">
+                            {% if menu.code == 'FO' %}analytics{% elif menu.code == 'BM' %}monitoring{% else %}dashboard{% endif %}
+                        </span>
+                        <span class="text-sm font-medium">{{ menu.name }}</span>
+                    </a>
+                    {% endfor %}
+
+                    {% if user.is_staff %}
+                   
+                    <div class="h-px bg-gray-100 dark:bg-gray-800 my-2 mx-3"></div>
+
+                    <p class="px-3 text-xs font-bold text-[#94a3b8] uppercase tracking-wider mb-2"> 관리자메뉴</p>
+                     <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-[#5f7d8c] hover:text-primary transition-colors group" href="{% url 'user_management' %}">
+                        <span class="material-symbols-outlined">person</span>
+                        <span class="text-sm font-medium">사용자현황</span>
+                    </a>         
+                    <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#5f7d8c] hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-colors group" href="/admin/">
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                        <span class="text-sm font-medium">Admin Panel</span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+            
+        </aside>
+
+        <main class="flex-1 flex flex-col min-w-0 bg-[#f8fafc] dark:bg-[#0f1c23] overflow-y-auto">
+            <div class="flex flex-col px-6 py-6 md:px-10 gap-6 w-full max-w-7xl mx-auto">
+                {% block content %}{% endblock %}
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.datatable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/ko.json"
+                },
+                "pageLength": 10,
+                "responsive": true
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}일일지표 입력 - Enterprise OS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 일반 표 스타일 강화 */
+    .perf-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #e5e7eb;
+    }
+    .perf-table th, .perf-table td {
+        border: 1px solid #e2e8f0;
+        padding: 12px 16px;
+        text-align: left;
+    }
+    .perf-table thead th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    .group-cell {
+        background-color: #f1f5f9;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .cat-cell {
+        background-color: #f8fafc;
+        color: #475569;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#e5e7eb] dark:border-[#2a3c48] pb-6">
+    <div>
+        <h1 class="text-[#111618] dark:text-white text-3xl font-bold tracking-tight">일일지표 입력</h1>
+        <p class="text-[#5f7d8c] text-sm mt-1">대분류 및 중분류별로 지표를 관리합니다.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-white dark:bg-[#1a2832] border border-[#e5e7eb] dark:border-[#2a3c48] px-3 py-2 rounded-lg shadow-sm">
+            <span class="material-symbols-outlined text-[#5f7d8c] text-sm">calendar_today</span>
+            <input type="date" id="target_date" value="{{ target_date }}" class="border-none focus:ring-0 text-sm p-0 bg-transparent dark:text-white">
+        </div>
+        <button id="save_btn" class="flex items-center justify-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold shadow-sm transition-colors shadow-primary/20">
+            <span class="material-symbols-outlined text-[20px]">save</span>
+            저장하기
+        </button>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-[#1a2832] rounded-xl border border-[#e5e7eb] dark:border-[#2a3c48] shadow-sm p-6 overflow-x-auto">
+    <table class="perf-table">
+        <thead>
+            <tr>
+                <th>구분 (대분류)</th>
+                <th>분류 (소분류)</th>
+                <th>항목</th>
+                <th class="w-40 text-right">일실적</th>
+                <th>단위</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in grouped_data %}
+                {% for cat in group.categories %}
+                    {% for item in cat.items %}
+                    <tr>
+                        {% if item.is_first_in_group %}
+                        <td rowspan="{{ group.rowspan }}" class="group-cell">{{ group.name }}</td>
+                        {% endif %}
+                        
+                        {% if item.is_first_in_cat %}
+                        <td rowspan="{{ cat.rowspan }}" class="cat-cell">{{ cat.name }}</td>
+                        {% endif %}
+                        
+                        <td class="font-medium text-[#1e293b]">{{ item.name }}</td>
+                        <td>
+                            <input type="number" 
+                                   step="0.01" 
+                                   data-id="{{ item.id }}" 
+                                   value="{{ item.value }}" 
+                                   class="performance-input w-full text-right rounded-lg border-[#e5e7eb] dark:border-[#2a3c48] bg-[#f8fafc] dark:bg-[#202f3a] text-[#111618] dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm py-1.5 px-3">
+                        </td>
+                        <td class="text-xs text-[#64748b]">{{ item.unit }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-10 text-[#5f7d8c]">
+                    등록된 지표 항목이 없습니다. 관리자 페이지에서 마스터 데이터를 등록해주세요.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // 날짜 변경 시 페이지 이동
+        $('#target_date').on('change', function() {
+            const newDate = $(this).val();
+            window.location.href = `{% url 'daily_performance' group_code=current_group_code %}?date=${newDate}`;
+        });
+
+        // 저장 버튼 클릭 시
+        $('#save_btn').on('click', function() {
+            const values = {};
+            $('.performance-input').each(function() {
+                const id = $(this).data('id');
+                const val = $(this).val() || 0;
+                values[id] = val;
+            });
+
+            const data = {
+                date: $('#target_date').val(),
+                values: values
+            };
+
+            fetch("{% url 'save_performance' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert('성공적으로 저장되었습니다.');
+                } else {
+                    alert('저장 중 오류가 발생했습니다: ' + result.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('저장 중 통신 오류가 발생했습니다.');
+            });
+        });
+    });
+</script>
+{% endblock %}

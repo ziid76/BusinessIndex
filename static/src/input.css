@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+}
+
+@layer components {
+    /* DataTables Custom Style */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        @apply rounded-lg border-[#e5e7eb] bg-[#f8fafc] text-sm py-2 px-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none;
+    }
+    table.dataTable {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        @apply border border-[#e5e7eb] rounded-xl overflow-hidden;
+    }
+    table.dataTable thead th {
+        @apply bg-gray-50 text-[#5f7d8c] font-bold text-xs uppercase tracking-wider py-4 px-6 border-b border-[#e5e7eb];
+    }
+    table.dataTable tbody td {
+        @apply py-4 px-6 border-b border-[#e5e7eb] text-sm text-[#111618];
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        @apply bg-primary text-white border-primary rounded-lg font-bold !important;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        @apply bg-primary/10 text-primary border-primary/10 rounded-lg !important;
+    }
+}
