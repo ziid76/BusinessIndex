@@ -115,7 +115,7 @@ def daily_performance(request, group_code):
             'id': ind.id,
             'name': ind.name,
             'unit': ind.unit,
-            'value': performance_map.get(ind.id, 0),
+            'value': performance_map.get(ind.id, None), # 기본값 0 → null 처리
             'is_first_in_group': is_new_group and (not current_cat['items']),
             'is_first_in_cat': is_new_cat
         }
@@ -138,6 +138,10 @@ def save_performance(request):
             values = data.get('values', {}) # {indicator_id: value}
             
             for ind_id, val in values.items():
+                if val == '':
+                    val = None # 빈값 → null 전환 로직 추가
+                else : 
+                    val = val.replace(',', '') # 세자리 콤마 제거로직
                 DailyPerformance.objects.update_or_create(
                     indicator_id=ind_id,
                     date=target_date,

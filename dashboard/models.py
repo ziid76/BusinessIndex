@@ -59,7 +59,7 @@ class Indicator(models.Model):
 class DailyPerformance(models.Model):
     indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE, related_name='performances', verbose_name="지표 항목")
     date = models.DateField(verbose_name="실적 일자")
-    value = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="일실적")
+    value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, verbose_name="일실적") # null 허용
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

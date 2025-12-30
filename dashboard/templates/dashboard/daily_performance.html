@@ -43,8 +43,13 @@
     </div>
     <div class="flex items-center gap-3">
         <div class="flex items-center gap-2 bg-white dark:bg-[#1a2832] border border-[#e5e7eb] dark:border-[#2a3c48] px-3 py-2 rounded-lg shadow-sm">
+            <!-- 이전 버튼 추가 -->
+            <button type="button" onclick="moveDate(-1)" class="text-[#5f7d8c] text-sm">◀</button>
             <span class="material-symbols-outlined text-[#5f7d8c] text-sm">calendar_today</span>
-            <input type="date" id="target_date" value="{{ target_date }}" class="border-none focus:ring-0 text-sm p-0 bg-transparent dark:text-white">
+            <input type="date" id="target_date" value="{{ target_date }}"
+                  class="border-none focus:ring-0 text-sm p-0 bg-transparent dark:text-white">
+            <!-- 다음 버튼 추가 -->
+            <button type="button" onclick="moveDate(1)"  class="text-[#5f7d8c] text-sm">▶</button>
         </div>
         <button id="save_btn" class="flex items-center justify-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold shadow-sm transition-colors shadow-primary/20">
             <span class="material-symbols-outlined text-[20px]">save</span>
@@ -79,11 +84,11 @@
                         
                         <td class="font-medium text-[#1e293b]">{{ item.name }}</td>
                         <td>
-                            <input type="number" 
-                                   step="0.01" 
+                            <!-- css 변경 (밝게) -->
+                            <input type="text" 
                                    data-id="{{ item.id }}" 
-                                   value="{{ item.value }}" 
-                                   class="performance-input w-full text-right rounded-lg border-[#e5e7eb] dark:border-[#2a3c48] bg-[#f8fafc] dark:bg-[#202f3a] text-[#111618] dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm py-1.5 px-3">
+                                   {% if item.value != None %} value="{{ item.value|floatformat:-2 }}"{% endif %}
+                                   class="performance-input w-full text-right rounded-lg bg-white border-gray-300 text-gray-900 focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm py-1.5 px-3">
                         </td>
                         <td class="text-xs text-[#64748b]">{{ item.unit }}</td>
                     </tr>
@@ -103,6 +108,20 @@
 
 {% block extra_js %}
 <script>
+    // 캘린더 좌 우 버튼
+    function moveDate(diff) {
+        const input = $('#target_date');
+        const d = new Date(input.val());
+        d.setDate(d.getDate() + diff);
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const newDate = `${yyyy}-${mm}-${dd}`;
+
+        window.location.href = `{% url 'daily_performance' group_code=current_group_code %}?date=${newDate}`;
+    }    
+
     $(document).ready(function() {
         // 날짜 변경 시 페이지 이동
         $('#target_date').on('change', function() {
@@ -115,7 +134,7 @@
             const values = {};
             $('.performance-input').each(function() {
                 const id = $(this).data('id');
-                const val = $(this).val() || 0;
+                const val = $(this).val();
                 values[id] = val;
             });
 
@@ -136,6 +155,9 @@
             .then(result => {
                 if (result.status === 'success') {
                     alert('성공적으로 저장되었습니다.');
+                    // 저장 성공 후 새로고침 로직 추가
+                    const currentDate = $('#target_date').val();
+                    window.location.href = `{% url 'daily_performance' group_code=current_group_code %}?date=${currentDate}`;
                 } else {
                     alert('저장 중 오류가 발생했습니다: ' + result.message);
                 }
@@ -144,6 +166,32 @@
                 console.error('Error:', error);
                 alert('저장 중 통신 오류가 발생했습니다.');
             });
+        });
+
+        // 세자리 콤마 및 소수점 제어
+        document.addEventListener('input', function (e) {
+            const el = e.target;
+            if (!el.classList.contains('performance-input')) return;
+            let v = el.value.replace(/[^0-9.]/g, '');
+            // 소수점 1개만
+            let parts = v.split('.');
+            if (parts.length > 2) {
+                v = parts[0] + '.' + parts.slice(1).join('');
+            }
+            parts = v.split('.');
+            let intPart = parts[0] || '';
+            let decPart = parts[1] ?? '';
+            // 정수부 콤마
+            intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            // 소수점 2자리 제한
+            decPart = decPart.slice(0, 2);
+            // trailing dot 유지
+            el.value = parts.length > 1 ? `${intPart}.${decPart}` : intPart;
+        });
+        
+        // 페이지 로드 시 위 제어 이벤트를 한 번 트리거한다
+        document.querySelectorAll('.performance-input').forEach(el => {
+            el.dispatchEvent(new Event('input', { bubbles: true }));
         });
     });
 </script>
